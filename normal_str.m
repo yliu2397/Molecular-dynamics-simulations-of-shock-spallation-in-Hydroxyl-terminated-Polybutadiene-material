@@ -1,0 +1,124 @@
+%% Nuwan Dewapriya
+%% 2021/05/18
+%% This code extracts data from the LAMMPS output file density.out and plot the position-time plot of density.
+
+close all;
+clear all;
+clc;
+
+%% Read density.out file
+
+[fid] = fopen('stress.300K.out');
+ 
+line_1 = fgetl(fid);
+line_2 = fgetl(fid);
+line_3 = fgetl(fid);
+
+stress(1,1:10) = 0;
+
+for i=1:800
+    
+    [ts,count] = fscanf(fid, '%f',[1,3]);
+
+    [data,count] = fscanf(fid, '%d %f %f %f %f %f %f %f %f %f ',[10,250]);
+     data = data';
+         
+    stress = cat(1, stress,data);
+          
+    Stress(:,i) = data(:,5)/-90000;
+     
+end
+
+for i=1:size(Stress,1)
+    for j=1:size(Stress,2)
+        if Stress(i,j)<0
+             Stress(i,j)=0;
+        elseif Stress(i,j)>8
+            Stress(i,j)=0;
+%         elseif Stress(i,j)<8
+%             Stress(i,j)=Stress(i,j)*1.63;
+        end
+        if i>70 & j<620
+            Stress(i,j)=0;
+        elseif i<23 & j>500 
+            Stress(i,j) = 0;
+       
+        end
+
+    end
+end
+% 三个顶点的坐标
+i1 = 1; j1 = 1;
+i2 = 1; j2 = 500;
+i3 = 20; j3 = 500;
+
+% 计算三角形面
+area = 0.5 * abs((i2-i1)*(j3-j1) - (i3-i1)*(j2-j1));
+hang=[0];
+lie=[0];
+k=1
+% 遍历矩阵
+for i = 1:size(Stress, 1)
+    for j = 1:size(Stress, 2)
+        area1(i,j) = 0.5 * abs(det([i1, j1, 1; i2, j2, 1; i, j, 1]));
+        area2(i,j) = 0.5 * abs(det([i1, j1, 1; i3, j3, 1; i, j, 1]));
+        area3(i,j) = 0.5 * abs(det([i2, j2, 1; i3, j3, 1; i, j, 1]));
+        
+        if (area1(i,j) + area2(i,j) + area3(i,j)) == area
+            Stress(i,j) = 0;
+            hang=i;
+            lie=j;
+            pos(k,:)=[hang,lie];
+            k=k+1;
+        end
+        
+    end
+end
+
+fclose(fid);
+
+Stress = Stress'*1.09;
+
+
+%% Spatiotemporal resolution
+
+X(size(Stress,1),size(Stress,2)) = 0;
+T(size(Stress,1),size(Stress,2)) = 0;
+
+
+for i=1:size(X,1)
+    X(i, :) = [1:size(X,2)].*1;
+end
+
+
+for i=1:size(T,2)
+    T(:, i) = [1:size(T,1)].*0.02';
+end
+
+
+%% X-T plot of Density
+
+
+pcolor(X(:,1:80), T(:,1:80), Stress(:,1:80))
+shading interp
+colormap(jet)
+
+% % set the same color limits for both plots
+caxis([0, 7]);
+
+hd = colorbar;
+
+% % get the handle of the colorbar
+% h = findobj(gcf,'type','colorbar');
+
+% % set the CLim property of the colorbar to the same values as the plots
+% set(h,'CLim',[0,1.5]);
+
+
+axis square
+set(gca,'LineWidth',1,'Fontsize',20)
+set(gca,'FontName','Arial')
+
+xlabel('Position (nm)','FontName','Arial','fontsize',20)%,'fontweight','b'   
+ylabel('Time (ps)','FontName','Arial','fontsize',20)
+
