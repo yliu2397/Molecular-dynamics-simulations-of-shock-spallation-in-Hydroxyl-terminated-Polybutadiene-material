@@ -1,11 +1,6 @@
-# Nuwan Dewapriya (2021/05/17)
-
-# ------------------------ INITIALIZATION ----------------------------
 units 		real
 boundary	p p p
 atom_style	full
-
-# ----------------- Interaction potential definition-----------------
 
 processors 	1 * *
 pair_style lj/class2/coul/long 10
@@ -18,8 +13,6 @@ special_bonds lj 0 0 1 coul 0 0 1
 read_data 	"relax.data"
 #include         "polyurethane_60nm.params"
 kspace_style	pppm 1e-06
-
-# ----------------- Minimize Section -----------------
 
 min_style          cg
 minimize           1e-8 1e-10 20000 50000
@@ -34,62 +27,39 @@ fix  	2 all langevin 300 300 ${tdamp} 90429997
 
 thermo 1000
 
-#-------------Balance to improve the computational efficiency----------------
-
 fix 3 all balance 100000 1.0 shift z 20 1.1 out tmp.balance
 
 run 100000
 
 unfix 2
 
-#----------------------COMPUTE CHUNK-----------------------
-
 compute		ch_id all chunk/atom bin/1d z lower 10 units box
 
 fix 	    	ave_ch all ave/chunk 1 100 200 ch_id density/mass file density.out
-
-#--------------------COMPUTE TEMPERATURE----------------------
 
 compute temp all temp/chunk ch_id temp com yes 
 
 fix temp_profile all ave/time 1 100 200 c_temp[1] c_temp[2] c_temp[3] file temp.out mode vector
 
-#--------------------COMPUTE shear stress-----------------------
 compute vor all voronoi/atom
 
 compute stress all stress/atom NULL
 
 fix stress all ave/chunk 1 100 200 ch_id c_stress[1] c_stress[2] c_stress[3] c_stress[4] c_stress[5] c_stress[6] c_vor[3] file stress.300K.out
 
-#--------------------COMPUTE normal stress-----------------------
-
-#variable norstr atom c_stress[1]/c_vor[1]
-
-#fix norstr all ave/chunk 1 100 200 ch_id v_norstr file norstress.300K.out
-
-#--------------------COMPUTE Vz-----------------------
-
 fix shock all ave/chunk 1 100 200 ch_id vx vy vz file velo.300K.out
-
-#--------------------define piston-----------------------
 
 region 		piston block INF INF INF INF INF 20 units box
 
 group          piston region piston
 
-#--------------------input image-----------------------
 compute ke all ke/atom
 
 dump 1 all custom 10000 shockmovie.*.lammpstrj id mol type xu yu zu c_ke
 
 dump_modify 1 sort id  
 
-#-------------- Shock -------------------------------------------
-
 fix move_pist piston move linear 0 0 0.02 units box
-
 run            100000
-
 unfix move_pist
-
 run            900000
