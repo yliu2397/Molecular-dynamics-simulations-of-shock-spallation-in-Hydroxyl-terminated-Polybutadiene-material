@@ -1,12 +1,5 @@
-%% Nuwan Dewapriya
-%% 2021/05/18
-%% This code extracts data from the LAMMPS output file density.out and plot the position-time plot of density.
-
-close all;
 clear all;
 clc;
-
-%% Read density.out file
 
 [fid] = fopen('stress.300K.out');
  
@@ -33,10 +26,6 @@ for i=1:size(Stress,1)
     for j=1:size(Stress,2)
         if Stress(i,j)<0
              Stress(i,j)=0;
-        elseif Stress(i,j)>8
-            Stress(i,j)=0;
-%         elseif Stress(i,j)<8
-%             Stress(i,j)=Stress(i,j)*1.63;
         end
         if i>70 & j<620
             Stress(i,j)=0;
@@ -47,17 +36,16 @@ for i=1:size(Stress,1)
 
     end
 end
-% 三个顶点的坐标
+
 i1 = 1; j1 = 1;
 i2 = 1; j2 = 500;
 i3 = 20; j3 = 500;
 
-% 计算三角形面
 area = 0.5 * abs((i2-i1)*(j3-j1) - (i3-i1)*(j2-j1));
 hang=[0];
 lie=[0];
 k=1
-% 遍历矩阵
+
 for i = 1:size(Stress, 1)
     for j = 1:size(Stress, 2)
         area1(i,j) = 0.5 * abs(det([i1, j1, 1; i2, j2, 1; i, j, 1]));
@@ -77,10 +65,7 @@ end
 
 fclose(fid);
 
-Stress = Stress'*1.09;
-
-
-%% Spatiotemporal resolution
+Stress = Stress';
 
 X(size(Stress,1),size(Stress,2)) = 0;
 T(size(Stress,1),size(Stress,2)) = 0;
@@ -95,26 +80,11 @@ for i=1:size(T,2)
     T(:, i) = [1:size(T,1)].*0.02';
 end
 
-
-%% X-T plot of Density
-
-
 pcolor(X(:,1:80), T(:,1:80), Stress(:,1:80))
 shading interp
 colormap(jet)
 
-% % set the same color limits for both plots
-caxis([0, 7]);
-
 hd = colorbar;
-
-% % get the handle of the colorbar
-% h = findobj(gcf,'type','colorbar');
-
-% % set the CLim property of the colorbar to the same values as the plots
-% set(h,'CLim',[0,1.5]);
-
-
 axis square
 set(gca,'LineWidth',1,'Fontsize',20)
 set(gca,'FontName','Arial')
